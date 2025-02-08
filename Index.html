@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta name="referrer" content="no-referrer-when-downgrade">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Terminal Simulator</title>
+  <style>
+    @font-face {
+      font-family: "Press Start 2P";
+      src: url("https://storage.wildwest.gg/uploads/1730265476288_press_start_2p.woff2") format("woff2");
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      background-color: #000;
+      font-family: 'Courier New', monospace;
+      transition: background-color 2s ease;
+    }
+
+    #terminal {
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      color: #00ff00;
+      font-size: 16px;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow: hidden;
+      white-space: pre;
+      line-height: 1.5;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    #cursor {
+      display: inline-block;
+      width: 10px;
+      height: 20px;
+      background-color: #00ff00;
+      animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink {
+      0% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    #image-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 2s ease;
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+    }
+
+    #center-image {
+      max-width: 45%;
+      max-height: 80vh;
+      margin: 0 10px;
+    }
+
+    #yatiro-image {
+      max-width: 45%;
+      max-height: 80vh;
+      margin: 0 10px;
+      position: absolute;
+      left: -100%;
+      transition: left 1s ease;
+    }
+
+    #dialogue {
+      font-family: 'Press Start 2P', cursive;
+      color: #000;
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 1s ease;
+      position: absolute;
+      bottom: -50px;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    #game-container {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #87CEEB;
+    }
+
+    #player {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      background-color: #FF0000;
+      border-radius: 50%;
+    }
+
+    #yatiro {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      background-color: #000000;
+      border-radius: 50%;
+    }
+
+    #exit {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      background-color: #00FF00;
+      border-radius: 10px;
+    }
+
+    #game-over {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 24px;
+      color: #FF0000;
+      text-align: center;
+    }
+
+    #restart-button {
+      display: none;
+      position: fixed;
+      top: 60%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Press Start 2P', cursive;
+      font-size: 18px;
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #joystick-container {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      width: 150px;
+      height: 150px;
+      background-color: rgba(255, 255, 255, 0.5);
+      border-radius: 50%;
+      touch-action: none;
+    }
+
+    #joystick {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 50px;
+      height: 50px;
+      background-color: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+      #terminal {
+        font-size: 14px;
+        padding: 10px;
+      }
+
+      #cursor {
+        width: 8px;
+        height: 16px;
+      }
+
+      #dialogue {
+        font-size: 12px;
+        white-space: normal;
+        width: 80%;
+      }
+
+      #center-image {
+        max-width: 40%;
+      }
+
+      #yatiro-image {
+        max-width: 40%;
+        left: -120%;
+      }
+
+      #player,
+      #yatiro {
+        width: 40px;
+        height: 40px;
+      }
+
+      #exit {
+        width: 60px;
+        height: 60px;
+      }
+
+      #game-over {
+        font-size: 18px;
+      }
+
+      #restart-button {
+        font-size: 14px;
+      }
+
+      #joystick-container {
+        display: block;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="terminal">
+    C:\&gt;<span id="cursor"></span>
+  </div>
+  <div id="image-container">
+    <img id="center-image" src="https://storage.wildwest.gg/uploads/2025-01-16T20:19:09.487Z_img_0969.gif" alt="ieuei ority">
+    <img id="yatiro-image" src="https://storage.wildwest.gg/uploads/2025-01-16T20:30:08.312Z_img_0970.gif" alt="Yatiro ieuei">
+    <div id="dialogue"></div>
+  </div>
+  <div id="game-container">
+    <div id="player"></div>
+    <div id="yatiro"></div>
+    <div id="exit"></div>
+  </div>
+  <div id="game-over">Game Over!</div>
+  <button id="restart-button">Restart</button>
+  <div id="joystick-container">
+    <div id="joystick"></div>
+  </div>
+  <script>
+    (function() {
+      let GG_ALL_GAME_CONFIG = {
+        playerUsername: "", // Will be set by getUserHandle()
+        connectionDelay: 2000, // Delay before showing connection message (ms)
+        authenticationDelay: 3000, // Delay before showing authentication message (ms)
+        loadingDelay: 2000, // Delay before fading to white (ms)
+        fadeOutDuration: 2000, // Duration of fade out animation (ms)
+        imageFadeInDelay: 2000, // Delay before fading in the image (ms)
+        imageFadeInDuration: 2000, // Duration of image fade in animation (ms)
+        dialogueDelay: 1000, // Delay before showing dialogue (ms)
+        dialogueFadeDuration: 1000, // Duration of dialogue fade in animation (ms)
+        isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent), // Check if user is on mobile
+        characterName: "ieuei ority", // Name of the character in the dialogue
+        dialogueText: "Heya! Idk where we are, just watch out for yatiro ieuei :p", // Dialogue text
+        firstLoad: true, // Flag to check if it's the first load
+        dialogueDuration: 5000, // Duration to show the dialogue (ms)
+        yatiroSlideDelay: 6000, // Delay before Yatiro slides in (ms)
+        yatiroSlideDuration: 1000, // Duration of Yatiro's slide animation (ms)
+        secondDialogueDelay: 1000, // Delay before showing second dialogue (ms)
+        secondDialogueText: "AAAA RUN FOR YOUR LIFE!", // Second dialogue text
+        secondDialogueDuration: 3000, // Duration to show the second dialogue (ms)
+        ieueiDisappearDuration: 1000, // Duration of ieuei's disappear animation (ms)
+        playerSpeed: 5, // Speed of the player
+        yatiroSpeed: 3, // Speed of Yatiro
+        catchDistance: 30, // Distance at which Yatiro catches the player
+        exitSize: 80, // Size of the exit square
+        playerWinDistance: 20, // Distance at which the player wins by reaching the exit
+        winDialogueText: "Whew! That was close!", // Dialogue text after winning the game
+        winDialogueDelay: 1000, // Delay before showing win dialogue (ms)
+      };
+      const terminal = document.getElementById('terminal');
+      const imageContainer = document.getElementById('image-container');
+      const dialogue = document.getElementById('dialogue');
+      const gameContainer = document.getElementById('game-container');
+      const player = document.getElementById('player');
+      const yatiro = document.getElementById('yatiro');
+      const exit = document.getElementById('exit');
+      const gameOver = document.getElementById('game-over');
+      const restartButton = document.getElementById('restart-button');
+      const joystickContainer = document.getElementById('joystick-container');
+      const joystick = document.getElementById('joystick');
+      let gameLoop;
+      let playerX = 0;
+      let playerY = 0;
+      let yatiroX = 0;
+      let yatiroY = 0;
+
+      function typeText(text, element, speed = 50) {
+        return new Promise((resolve) => {
+          let i = 0;
+
+          function type() {
+            if (i < text.length) {
+              element.innerHTML += text.charAt(i);
+              i++;
+              setTimeout(type, speed);
+            } else {
+              resolve();
+            }
+          }
+          type();
+        });
+      }
+
+      function adjustForDevice() {
+        if (GG_ALL_GAME_CONFIG.isMobile) {
+          document.body.classList.add('mobile');
+        } else {
+          document.body.classList.add('desktop');
+        }
+      }
+
+      function getUserHandle() {
+        return new Promise((resolve) => {
+          window.addEventListener('message', function handleMessage(event) {
+            if (event.data.type === 'RESPONSE_USER_HANDLE_EVENT') {
+              window.removeEventListener('message', handleMessage);
+              resolve(event.data.handle || 'ANONYMOUS');
+            }
+          });
+          window.parent.postMessage({
+            type: 'REQUEST_USER_HANDLE_EVENT'
+          }, '*');
+        });
+      }
+
+      function saveGameState() {
+        const gameState = {
+          firstLoad: false
+        };
+        const saveGameEvent = {
+          type: 'REQUEST_SAVE_GAME_EVENT',
+          save_data: gameState
+        };
+        window.parent.postMessage(saveGameEvent, '*');
+      }
+
+      function loadGameState() {
+        return new Promise((resolve) => {
+          const loadGameEvent = {
+            type: 'REQUEST_LOAD_GAME_EVENT'
+          };
+          window.parent.postMessage(loadGameEvent, '*');
+          window.addEventListener('message', function handleLoadGame(event) {
+            if (event.data.type === 'RESPONSE_LOAD_GAME_EVENT') {
+              window.removeEventListener('message', handleLoadGame);
+              resolve(event.data.save_data);
+            }
+          });
+        });
+      }
+      async function simulateConnection() {
+        adjustForDevice();
+        const savedState = await loadGameState();
+        if (savedState && !savedState.firstLoad) {
+          GG_ALL_GAME_CONFIG.firstLoad = false;
+        }
+        if (GG_ALL_GAME_CONFIG.firstLoad) {
+          GG_ALL_GAME_CONFIG.playerUsername = await getUserHandle();
+          await new Promise(resolve => setTimeout(resolve, GG_ALL_GAME_CONFIG.connectionDelay));
+          terminal.innerHTML = '';
+          await typeText(`USER ${GG_ALL_GAME_CONFIG.playerUsername} CONNECTED. AUTHENTICATION STARTED.`, terminal);
+          await new Promise(resolve => setTimeout(resolve, GG_ALL_GAME_CONFIG.authenticationDelay));
+          terminal.innerHTML = '';
+          await typeText(`USER ${GG_ALL_GAME_CONFIG.playerUsername} AUTHENTICATED. LOADING PROGRAM IO4...`, terminal);
+          await new Promise(resolve => setTimeout(resolve, GG_ALL_GAME_CONFIG.loadingDelay));
+          terminal.style.transition = `opacity ${GG_ALL_GAME_CONFIG.fadeOutDuration}ms ease`;
+          terminal.style.opacity = '0';
+          setTimeout(() => {
+            document.body.style.backgroundColor = '#fff';
+            showImageAndDialogue();
+          }, GG_ALL_GAME_CONFIG.fadeOutDuration);
+          // Save the game state after first load
+          saveGameState();
+        } else {
+          // Skip terminal simulation and directly show the image and dialogue
+          terminal.style.display = 'none';
+          document.body.style.backgroundColor = '#fff';
+          showImageAndDialogue();
+        }
+      }
+
+      function showImageAndDialogue() {
+        setTimeout(() => {
+          imageContainer.style.transition = `opacity ${GG_ALL_GAME_CONFIG.imageFadeInDuration}ms ease`;
+          imageContainer.style.opacity = '1';
+          setTimeout(() => {
+            dialogue.textContent = `${GG_ALL_GAME_CONFIG.characterName}: ${GG_ALL_GAME_CONFIG.dialogueText}`;
+            dialogue.style.transition = `opacity ${GG_ALL_GAME_CONFIG.dialogueFadeDuration}ms ease`;
+            dialogue.style.opacity = '1';
+            // Set a timeout to hide the dialogue
+            setTimeout(() => {
+              dialogue.style.opacity = '0';
+              // Slide in Yatiro after the dialogue disappears
+              setTimeout(() => {
+                const yatiroImage = document.getElementById('yatiro-image');
+                yatiroImage.style.left = '50%';
+                // Show second dialogue after Yatiro slides in
+                setTimeout(() => {
+                  dialogue.textContent = `${GG_ALL_GAME_CONFIG.characterName}: ${GG_ALL_GAME_CONFIG.secondDialogueText}`;
+                  dialogue.style.opacity = '1';
+                  // Hide second dialogue and make ieuei disappear
+                  setTimeout(() => {
+                    dialogue.style.opacity = '0';
+                    const centerImage = document.getElementById('center-image');
+                    centerImage.style.transition = `opacity ${GG_ALL_GAME_CONFIG.ieueiDisappearDuration}ms ease`;
+                    centerImage.style.opacity = '0';
+                    // Start the minigame after ieuei disappears
+                    setTimeout(startMinigame, GG_ALL_GAME_CONFIG.ieueiDisappearDuration);
+                  }, GG_ALL_GAME_CONFIG.secondDialogueDuration);
+                }, GG_ALL_GAME_CONFIG.secondDialogueDelay);
+              }, GG_ALL_GAME_CONFIG.yatiroSlideDuration);
+            }, GG_ALL_GAME_CONFIG.dialogueDuration);
+          }, GG_ALL_GAME_CONFIG.dialogueDelay);
+        }, GG_ALL_GAME_CONFIG.imageFadeInDelay);
+      }
+      let keys = {};
+      let joystickActive = false;
+      let joystickAngle = 0;
+
+      function startMinigame() {
+        imageContainer.style.display = 'none';
+        gameContainer.style.display = 'block';
+        if (GG_ALL_GAME_CONFIG.isMobile) {
+          joystickContainer.style.display = 'block';
+        }
+        playerX = Math.random() * (window.innerWidth - 50);
+        playerY = Math.random() * (window.innerHeight - 50);
+        yatiroX = 0;
+        yatiroY = 0;
+        exitX = Math.random() * (window.innerWidth - GG_ALL_GAME_CONFIG.exitSize);
+        exitY = Math.random() * (window.innerHeight - GG_ALL_GAME_CONFIG.exitSize);
+        updatePositions();
+        gameLoop = setInterval(updateGame, 50);
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        if (GG_ALL_GAME_CONFIG.isMobile) {
+          joystickContainer.addEventListener('touchstart', handleJoystickStart);
+          joystickContainer.addEventListener('touchmove', handleJoystickMove);
+          joystickContainer.addEventListener('touchend', handleJoystickEnd);
+        }
+      }
+
+      function handleKeyDown(e) {
+        keys[e.key.toLowerCase()] = true;
+      }
+
+      function handleKeyUp(e) {
+        keys[e.key.toLowerCase()] = false;
+      }
+
+      function handleJoystickStart(e) {
+        e.preventDefault();
+        joystickActive = true;
+      }
+
+      function handleJoystickMove(e) {
+        e.preventDefault();
+        if (joystickActive) {
+          const touch = e.touches[0];
+          const rect = joystickContainer.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const dx = touch.clientX - centerX;
+          const dy = touch.clientY - centerY;
+          joystickAngle = Math.atan2(dy, dx);
+          const distance = Math.min(rect.width / 2, Math.sqrt(dx * dx + dy * dy));
+          const x = Math.cos(joystickAngle) * distance;
+          const y = Math.sin(joystickAngle) * distance;
+          joystick.style.transform = `translate(${x}px, ${y}px)`;
+        }
+      }
+
+      function handleJoystickEnd(e) {
+        e.preventDefault();
+        joystickActive = false;
+        joystick.style.transform = 'translate(-50%, -50%)';
+      }
+
+      function updateGame() {
+        movePlayer();
+        moveYatiro();
+        checkCollisions();
+        updatePositions();
+      }
+
+      function movePlayer() {
+        if (GG_ALL_GAME_CONFIG.isMobile) {
+          if (joystickActive) {
+            playerX += Math.cos(joystickAngle) * GG_ALL_GAME_CONFIG.playerSpeed;
+            playerY += Math.sin(joystickAngle) * GG_ALL_GAME_CONFIG.playerSpeed;
+          }
+        } else {
+          if (keys['w'] || keys['arrowup']) playerY -= GG_ALL_GAME_CONFIG.playerSpeed;
+          if (keys['s'] || keys['arrowdown']) playerY += GG_ALL_GAME_CONFIG.playerSpeed;
+          if (keys['a'] || keys['arrowleft']) playerX -= GG_ALL_GAME_CONFIG.playerSpeed;
+          if (keys['d'] || keys['arrowright']) playerX += GG_ALL_GAME_CONFIG.playerSpeed;
+        }
+        playerX = Math.max(0, Math.min(window.innerWidth - 50, playerX));
+        playerY = Math.max(0, Math.min(window.innerHeight - 50, playerY));
+      }
+
+      function moveYatiro() {
+        const dx = playerX - yatiroX;
+        const dy = playerY - yatiroY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance > GG_ALL_GAME_CONFIG.catchDistance) {
+          yatiroX += (dx / distance) * GG_ALL_GAME_CONFIG.yatiroSpeed;
+          yatiroY += (dy / distance) * GG_ALL_GAME_CONFIG.yatiroSpeed;
+        }
+      }
+
+      function checkCollisions() {
+        const playerCenterX = playerX + 25;
+        const playerCenterY = playerY + 25;
+        const yatiroCenterX = yatiroX + 30;
+        const yatiroCenterY = yatiroY + 30;
+        const exitCenterX = exitX + GG_ALL_GAME_CONFIG.exitSize / 2;
+        const exitCenterY = exitY + GG_ALL_GAME_CONFIG.exitSize / 2;
+        const distanceToYatiro = Math.sqrt(
+          Math.pow(playerCenterX - yatiroCenterX, 2) + Math.pow(playerCenterY - yatiroCenterY, 2)
+        );
+        const distanceToExit = Math.sqrt(
+          Math.pow(playerCenterX - exitCenterX, 2) + Math.pow(playerCenterY - exitCenterY, 2)
+        );
+        if (distanceToYatiro < GG_ALL_GAME_CONFIG.catchDistance) {
+          endGame(false);
+        } else if (distanceToExit < GG_ALL_GAME_CONFIG.playerWinDistance) {
+          endGame(true);
+        }
+      }
+
+      function updatePositions() {
+        player.style.left = `${playerX}px`;
+        player.style.top = `${playerY}px`;
+        yatiro.style.left = `${yatiroX}px`;
+        yatiro.style.top = `${yatiroY}px`;
+        exit.style.left = `${exitX}px`;
+        exit.style.top = `${exitY}px`;
+      }
+
+      function endGame(won) {
+        clearInterval(gameLoop);
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('keyup', handleKeyUp);
+        if (GG_ALL_GAME_CONFIG.isMobile) {
+          joystickContainer.removeEventListener('touchstart', handleJoystickStart);
+          joystickContainer.removeEventListener('touchmove', handleJoystickMove);
+          joystickContainer.removeEventListener('touchend', handleJoystickEnd);
+        }
+        gameContainer.style.display = 'none';
+        const yatiroImage = document.getElementById('yatiro-image');
+        yatiroImage.style.transition = `opacity ${GG_ALL_GAME_CONFIG.imageFadeInDuration}ms ease`;
+        yatiroImage.style.opacity = '0';
+        if (won) {
+          imageContainer.style.display = 'flex';
+          const centerImage = document.getElementById('center-image');
+          centerImage.style.transition = `opacity ${GG_ALL_GAME_CONFIG.imageFadeInDuration}ms ease`;
+          centerImage.style.opacity = '1';
+          setTimeout(() => {
+            dialogue.textContent = `${GG_ALL_GAME_CONFIG.characterName}: ${GG_ALL_GAME_CONFIG.winDialogueText}`;
+            dialogue.style.transition = `opacity ${GG_ALL_GAME_CONFIG.dialogueFadeDuration}ms ease`;
+            dialogue.style.opacity = '1';
+          }, GG_ALL_GAME_CONFIG.winDialogueDelay);
+        } else {
+          gameOver.textContent = "Game Over!";
+          gameOver.style.color = "#FF0000";
+          gameOver.style.display = 'block';
+          restartButton.style.display = 'block';
+        }
+      }
+      restartButton.addEventListener('click', () => {
+        gameOver.style.display = 'none';
+        restartButton.style.display = 'none';
+        imageContainer.style.display = 'none';
+        dialogue.style.opacity = '0';
+        const yatiroImage = document.getElementById('yatiro-image');
+        yatiroImage.style.transition = 'none';
+        yatiroImage.style.opacity = '1';
+        yatiroImage.style.left = '50%';
+        startMinigame();
+      });
+      simulateConnection();
+    })();
+  </script>
+
+</body>
